@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lodge Dinner Check-In</title>
+  <style>
+    :root {
+      --navy:        #1a2744;
+      --navy-light:  #243358;
+      --gold:        #c9a84c;
+      --gold-light:  #e8c96a;
+      --green:       #2d6a4f;
+      --green-light: #40916c;
+      --red:         #c1121f;
+      --bg:          #f0f2f5;
+      --card:        #ffffff;
+      --text:        #1a1a2e;
+      --muted:       #6b7280;
+      --border:      #e5e7eb;
+      --shadow:      0 2px 8px rgba(0,0,0,0.10);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── HEADER ─────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      color: #fff;
+      padding: 14px 16px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .header h1 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gold-light);
+      line-height: 1.2;
+    }
+    .header-sub {
+      font-size: 12px;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+    .header-actions { display: flex; gap: 6px; }
+    .btn-icon {
+      background: rgba(255,255,255,0.12);
+      border: none;
+      color: #fff;
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+      transition: background .15s;
+    }
+    .btn-icon:active { background: rgba(255,255,255,0.25); }
+
+    /* ── STATS BAR ───────────────────────────────── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--navy-light);
+    }
+    .stat {
+      background: rgba(255,255,255,0.10);
+      border-radius: 8px;
+      padding: 7px 4px;
+      text-align: center;
+      color: #fff;
+    }
+    .stat-val { font-size: 22px; font-weight: 700; color: var(--gold-light); line-height: 1; }
+    .stat-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: .6px; opacity: .75; margin-top: 2px; }
+
+    /* ── SEARCH + FILTERS ────────────────────────── */
+    .toolbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px 0;
+    }
+    .search-wrap { position: relative; margin-bottom: 8px; }
+    .search-icon {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 15px;
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 9px 14px 9px 36px;
+      border: 2px solid var(--border);
+      border-radius: 22px;
+      font-size: 15px;
+      background: var(--bg);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .search-input:focus { border-color: var(--navy); }
+
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      scrollbar-width: none;
+    }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+    .ftab {
+      flex-shrink: 0;
+      padding: 5px 14px;
+      border-radius: 18px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .ftab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+    /* ── GUEST LIST ──────────────────────────────── */
+    .guest-list {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .guest-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 4px solid transparent;
+      transition: transform .1s;
+      user-select: none;
+    }
+    .guest-card:active { transform: scale(.985); }
+    .guest-card.st-arrived  { border-left-color: var(--green-light); }
+    .guest-card.st-paid     { border-left-color: var(--gold); }
+
+    .status-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--border);
+    }
+    .status-dot.arrived { background: var(--green-light); }
+    .status-dot.paid    { background: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.22); }
+
+    .guest-info { flex: 1; min-width: 0; }
+    .guest-name { font-size: 16px; font-weight: 600; }
+    .guest-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 2px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .b-meal     { background: #eff6ff; color: #1d4ed8; }
+    .b-early    { background: #fef3c7; color: #92400e; }
+    .b-guests   { background: #f0fdf4; color: #166534; }
+    .b-paid     { background: #fef9e7; color: #7d6608; }
+    .b-noshow   { background: #fef2f2; color: #991b1b; }
+    .b-check    { background: #eef2ff; color: #3730a3; }
+    .chevron    { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+
+    .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+    .empty .ico { font-size: 48px; margin-bottom: 10px; }
+
+    .loading { text-align: center; padding: 48px 24px; }
+    .spinner {
+      width: 38px; height: 38px;
+      border: 4px solid var(--border);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MODALS ──────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .sheet {
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+    .overlay.open .sheet { transform: translateY(0); }
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    .sheet-header {
+      padding: 14px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sheet-title { font-size: 21px; font-weight: 700; }
+    .sheet-sub   { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .sheet-body  { padding: 18px 20px; }
+
+    .sec-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .9px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .section { margin-bottom: 18px; }
+
+    .meal-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+    .meal-count { font-weight: 700; color: var(--navy); }
+
+    /* Check-in button */
+    .cibtn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .cibtn.off { background: var(--navy); color: #fff; }
+    .cibtn.on  { background: var(--green-light); color: #fff; }
+
+    /* Payment */
+    .amount-display {
+      font-size: 34px;
+      font-weight: 700;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      color: var(--navy);
+      padding: 10px;
+      background: var(--bg);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      transition: color .3s;
+    }
+    .amount-display.flash { color: var(--green); }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .qbtn {
+      padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .qbtn:active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+    .pay-row { display: flex; gap: 8px; }
+    .pay-input {
+      flex: 1;
+      padding: 11px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      outline: none;
+    }
+    .pay-input:focus { border-color: var(--navy); }
+    .pay-btn {
+      padding: 11px 18px;
+      background: var(--gold);
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--navy);
+      cursor: pointer;
+    }
+    .clr-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      background: transparent;
+      border: 1.5px solid var(--red);
+      color: var(--red);
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Settings */
+    .set-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .set-label { font-size: 15px; font-weight: 500; }
+    .set-input {
+      width: 88px;
+      padding: 7px 10px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      text-align: right;
+      outline: none;
+    }
+    .set-input:focus { border-color: var(--navy); }
+
+    /* Summary table */
+    .sum-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .sum-table th {
+      text-align: left;
+      padding: 7px 10px;
+      background: var(--bg);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      font-weight: 600;
+    }
+    .sum-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    .sum-table tfoot td { font-weight: 700; background: var(--bg); }
+
+    /* Error */
+    .err-box {
+      margin: 16px;
+      padding: 14px 16px;
+      background: #fee2e2;
+      border-left: 4px solid var(--red);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .err-box code {
+      display: block;
+      background: rgba(0,0,0,.08);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      word-break: break-all;
+      margin: 8px 0;
+    }
+    .retry-btn {
+      margin-top: 10px;
+      padding: 10px 18px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Wider screens */
+    @media (min-width: 600px) {
+      .sheet { max-width: 480px; margin: auto; border-radius: 20px; }
+      .overlay { align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-row">
+    <div>
+      <h1 id="ev-title">Lodge Dinner Check-In</h1>
+      <div class="header-sub" id="ev-sub">Loading…</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" title="Load CSV file" onclick="triggerFileLoad()">📂</button>
+      <button class="btn-icon" title="Settings"  onclick="openSettings()">⚙️</button>
+      <button class="btn-icon" title="Summary"   onclick="openSummary()">📊</button>
+      <button class="btn-icon" title="Refresh from Google Sheet" onclick="loadSheet()">🔄</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STATS ════════════════════════════════════════════════ -->
+<div class="stats">
+  <div class="stat"><div class="stat-val" id="s-rsvp">—</div><div class="stat-lbl">RSVP'd</div></div>
+  <div class="stat"><div class="stat-val" id="s-in">0</div><div class="stat-lbl">Checked In</div></div>
+  <div class="stat"><div class="stat-val" id="s-money">$0</div><div class="stat-lbl">Collected</div></div>
+</div>
+
+<!-- ═══ SEARCH + FILTERS ═════════════════════════════════════ -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="q" type="search" placeholder="Search by name…" oninput="render()">
+  </div>
+  <div class="filter-tabs">
+    <button class="ftab active" onclick="setFilter('all',this)">All</button>
+    <button class="ftab"        onclick="setFilter('pending',this)">Not Arrived</button>
+    <button class="ftab"        onclick="setFilter('arrived',this)">Arrived</button>
+    <button class="ftab"        onclick="setFilter('paid',this)">Paid</button>
+  </div>
+</div>
+
+<!-- Hidden file input for local CSV loading -->
+<input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" onchange="handleFileLoad(event)">
+
+<!-- ═══ GUEST LIST ═══════════════════════════════════════════ -->
+<div class="guest-list" id="list">
+  <div class="loading"><div class="spinner"></div><p>Loading guest list…</p></div>
+</div>
+
+<!-- ═══ GUEST DETAIL MODAL ═══════════════════════════════════ -->
+<div class="overlay" id="m-guest" onclick="overlayClick(event,'m-guest')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="m-name"></div>
+      <div class="sheet-sub"  id="m-sub"></div>
+    </div>
+    <div class="sheet-body" id="m-body"></div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════════ -->
+<div class="overlay" id="m-settings" onclick="overlayClick(event,'m-settings')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Settings</div>
+      <div class="sheet-sub">Meal prices &amp; options</div>
+    </div>
+    <div class="sheet-body" id="m-settings-body"></div>
+  </div>
+</div>
+
+<!-- ═══ SUMMARY MODAL ════════════════════════════════════════ -->
+<div class="overlay" id="m-summary" onclick="overlayClick(event,'m-summary')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Check-In Summary</div>
+      <div class="sheet-sub" id="m-sum-sub"></div>
+    </div>
+    <div class="sheet-body" id="m-sum-body"></div>
+    <div style="padding:0 20px 20px;display:flex;gap:8px;">
+      <button class="cibtn off" style="flex:1" onclick="closeModal('m-summary')">Close</button>
+      <button class="cibtn off" style="flex:1;background:var(--gold);color:var(--navy);" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRICE SETUP MODAL ════════════════════════════════════ -->
+<div class="overlay" id="m-price">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Set Dinner Price</div>
+      <div class="sheet-sub">Enter the price per entree before collecting payments</div>
+    </div>
+    <div class="sheet-body" id="m-price-body"></div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// CONFIG
+// ──────────────────────────────────────────────────────────────
+const SHEET_ID  = '1WMX_PCQXv0W-Ioq-R4GO02ZsExC1yDizgiGvJk0ojA4';
+const STORE_KEY = 'lodge_checkin_' + SHEET_ID;
+
+// ──────────────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────────────
+let guests     = [];          // parsed from sheet
+let mealCols   = [];          // [{ name, idx }]
+let isFoodEvt  = false;
+let checkin     = {};          // { [id]: { arrived:bool, paid:number, byCheck:bool, checkNum:string } }
+let dinnerPrice = 0;           // price per entree (all meal options cost the same)
+let extras      = {};          // { [mealName]: count } of extra walk-in slots per meal
+let filter      = 'all';
+let activeId   = null;
+
+// ──────────────────────────────────────────────────────────────
+// PERSISTENCE
+// ──────────────────────────────────────────────────────────────
+function loadStore() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    checkin     = d.checkin     || {};
+    dinnerPrice = d.dinnerPrice || 0;
+    extras      = d.extras      || {};
+  } catch(e) {}
+}
+function saveStore() {
+  localStorage.setItem(STORE_KEY, JSON.stringify({ checkin, dinnerPrice, extras }));
+}
+
+// ──────────────────────────────────────────────────────────────
+// CSV PARSING
+// ──────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  return text.split(/\r?\n/).map(parseRow);
+}
+function parseRow(line) {
+  const out = [];
+  let cell = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cell += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      out.push(cell.trim()); cell = '';
+    } else cell += c;
+  }
+  out.push(cell.trim());
+  return out;
+}
+
+// ──────────────────────────────────────────────────────────────
+// NAME HELPERS
+// ──────────────────────────────────────────────────────────────
+function toTitleCase(str) {
+  // Capitalise the first letter of each word; leave all-caps abbreviations alone
+  return str.toLowerCase().replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+}
+
+function formatGuestName(first, last, title = '') {
+  const base = [last, first].filter(Boolean).join(', ');
+  return title ? `${base}, ${title}` : base;
+}
+
+function isCompedCell(value) {
+  return /^(comp|comped|complimentary|covered)$/i.test(String(value || '').trim());
+}
+
+function isGuestComped(guest, state = checkin[guest.id] || {}) {
+  return !!guest.comped || !!state.byComp;
+}
+
+function isSummaryLabel(value) {
+  return /^(rsvp|ordered|order(ed)?|extra|total meals?|prime rib|chicken|salmon|vegan)$/i.test(String(value || '').trim());
+}
+
+// ──────────────────────────────────────────────────────────────
+// SHEET LOADING
+// ──────────────────────────────────────────────────────────────
+async function loadSheet() {
+  document.getElementById('list').innerHTML =
+    '<div class="loading"><div class="spinner"></div><p>Loading guest list…</p></div>';
+  document.getElementById('ev-sub').textContent = 'Loading…';
+
+  const urls = [
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`,
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const text = await r.text();
+      // Sanity: must look like CSV with commas, not an HTML redirect page
+      if (text.trim().startsWith('<')) continue;
+      processSheet(text);
+      return;
+    } catch(e) { /* try next */ }
+  }
+  showError(document.getElementById('list'));
+}
+
+function processSheet(csv) {
+  const rows = parseCSV(csv);
+  if (rows.length < 2) return;
+  const hdrs = rows[0].map(h => h.replace(/^"|"$/g,'').trim());
+
+  function colOf(...aliases) {
+    for (const a of aliases) {
+      const i = hdrs.findIndex(h => h.toLowerCase().includes(a.toLowerCase()));
+      if (i >= 0) return i;
+    }
+    return -1;
+  }
+
+  const iLast      = colOf('last name','lastname');
+  const iFirst     = colOf('first name','firstname');
+  const iEmail     = colOf('email');
+  const iEarly     = colOf('early bird');
+  const iMeals     = colOf('number of meals','num meals');
+  const iAttendees = colOf('number of attendees','num attendees');
+  const iComped    = colOf('comped','comp','complimentary','covered');
+
+  // Meal option columns = anything between iMeals and iAttendees
+  mealCols = [];
+  const mStart = iMeals     >= 0 ? iMeals + 1     : -1;
+  const mEnd   = iAttendees >= 0 ? iAttendees      : hdrs.length;
+  if (mStart >= 0) {
+    for (let i = mStart; i < mEnd; i++) {
+      if (hdrs[i]) mealCols.push({ name: hdrs[i], idx: i });
+    }
+  }
+  isFoodEvt = mealCols.length > 0;
+
+  // Parse guest rows
+  const parsed = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const rawLast  = (iLast  >= 0 ? row[iLast]  : '').replace(/^"|"$/g,'').trim();
+    const rawFirst = (iFirst >= 0 ? row[iFirst] : '').replace(/^"|"$/g,'').trim();
+    if (!rawLast && !rawFirst) continue;
+    if (!rawLast && isSummaryLabel(rawFirst)) continue;
+    if (isSummaryLabel(rawLast) || isSummaryLabel(rawFirst)) continue;
+
+    // Strip title suffix from last name col e.g. "Smith, WM" → last="Smith", title="WM"
+    const [rawCleanLast, ...titleParts] = rawLast.split(',');
+    const rawTitle = titleParts.join(',').trim().toUpperCase();
+    // Ignore common non-titles accidentally entered in the title field
+    const IGNORE_TITLES = ['BROTHER', 'BR.', 'BROTHER,'];
+    const title = IGNORE_TITLES.includes(rawTitle) ? '' : rawTitle;
+
+    // Normalise capitalisation: Title Case for first and last name
+    const first = toTitleCase(rawFirst);
+    const last  = toTitleCase(rawCleanLast.trim());
+
+    // Display name: "Smith, John" or "Smith, John, PM"
+    const fullName = formatGuestName(first, last, title);
+
+    const email    = (iEmail    >= 0 ? row[iEmail]    : '').replace(/^"|"$/g,'').trim();
+    const earlyBird = (iEarly   >= 0 ? row[iEarly]    : '').replace(/^"|"$/g,'').trim().toLowerCase() === 'yes';
+    const numMeals  = parseInt(iMeals     >= 0 ? row[iMeals]     : '0') || 0;
+    const numAtt    = parseInt(iAttendees >= 0 ? row[iAttendees] : '0') || numMeals || 1;
+    const comped = iComped >= 0
+      ? isCompedCell(row[iComped])
+      : row.some((cell, idx) => idx >= mEnd && isCompedCell(cell));
+
+    const meals = {};
+    for (const mc of mealCols) meals[mc.name] = parseInt(row[mc.idx]) || 0;
+    const hasMeals = Object.values(meals).some(v => v > 0);
+
+    // Stable ID: normalised name (+ email if available to disambiguate)
+    const idBase = `${first} ${last}`.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    const id = email ? idBase + '_' + email.split('@')[0].replace(/[^a-z0-9]/g,'') : idBase + '_r' + r;
+
+  parsed.push({ id, first, last, title, fullName,
+          email, earlyBird, numMeals, numAtt, meals, hasMeals, comped });
+  }
+
+  guests = parsed;
+  appendExtras();
+  saveStore();
+
+  document.getElementById('ev-title').textContent = 'Lodge Dinner Check-In';
+  document.getElementById('ev-sub').textContent   = `${parsed.length} guests • ${new Date().toLocaleDateString()}`;
+
+  render();
+  updateStats();
+  // If this is a food event and price hasn't been set yet, prompt the user
+  if (isFoodEvt && dinnerPrice === 0) {
+    setTimeout(() => openPriceSetup(), 150);
+  }
+}
+
+function showError(el) {
+  el.innerHTML = `
+    <div style="padding:20px">
+      <div style="background:#fff;border-radius:14px;padding:22px;box-shadow:var(--shadow);text-align:center;margin-bottom:12px;">
+        <div style="font-size:44px;margin-bottom:10px">📂</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px">Load Guest List</div>
+        <p style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.5">
+          Open Google Sheets, then choose<br>
+          <strong>File → Download → CSV</strong><br>
+          and load that file here.
+        </p>
+        <button class="cibtn off" style="width:auto;padding:12px 28px;font-size:15px" onclick="triggerFileLoad()">
+          📂 Choose CSV File
+        </button>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:var(--shadow);">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Or fetch from Google Sheets directly</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+          This requires the sheet to be published via<br>
+          <em>File → Share → Publish to web</em>.
+        </p>
+        <button class="retry-btn" style="margin-top:0" onclick="loadSheet()">🔄 Try Google Sheet</button>
+      </div>
+    </div>`;
+}
+
+function triggerFileLoad() {
+  document.getElementById('csv-file-input').value = '';
+  document.getElementById('csv-file-input').click();
+}
+
+function handleFileLoad(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      processSheet(e.target.result);
+      // Update subtitle with filename
+      document.getElementById('ev-sub').textContent =
+        file.name.replace(/\.csv$/i,'') + ' • ' + new Date().toLocaleDateString();
+    } catch(err) {
+      alert('Could not parse CSV: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ──────────────────────────────────────────────────────────────
+// EXTRAS (walk-in meal slots)
+// ──────────────────────────────────────────────────────────────
+function appendExtras() {
+  // Remove any previously generated extra slots
+  guests = guests.filter(g => !g.isExtra);
+  if (!isFoodEvt) return;
+  for (const mc of mealCols) {
+    const count = parseInt(extras[mc.name]) || 0;
+    for (let i = 1; i <= count; i++) {
+      const meals = {};
+      for (const m of mealCols) meals[m.name] = 0;
+      meals[mc.name] = 1;
+      const idSlug = mc.name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+      guests.push({
+        id:        `extra_${idSlug}_${i}`,
+        first:     `Extra ${mc.name}`,
+        last:      String(i),
+        title:     '',
+        fullName:  `Extra ${mc.name} ${i}`,
+        email:     '',
+        earlyBird: false,
+        numMeals:  1,
+        numAtt:    1,
+        meals,
+        hasMeals:  true,
+        isExtra:   true
+      });
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// STATS
+// ──────────────────────────────────────────────────────────────
+function updateStats() {
+  const total   = guests.filter(g => !g.isExtra).length;
+  const arrived = guests.filter(g => (checkin[g.id]||{}).arrived).length;
+  const money   = guests.reduce((s,g) => s + ((checkin[g.id]||{}).paid||0), 0);
+  document.getElementById('s-rsvp' ).textContent = total;
+  document.getElementById('s-in'   ).textContent = arrived;
+  document.getElementById('s-money').textContent = '$' + money.toFixed(0);
+}
+
+// ──────────────────────────────────────────────────────────────
+// RENDER GUEST LIST
+// ──────────────────────────────────────────────────────────────
+function render() {
+  const q   = (document.getElementById('q').value||'').toLowerCase();
+  const el  = document.getElementById('list');
+
+  let list = guests.filter(g => {
+    if (q && !g.fullName.toLowerCase().includes(q) && !g.email.toLowerCase().includes(q)) return false;
+    const st = checkin[g.id]||{};
+    if (filter === 'pending' && st.arrived)   return false;
+    if (filter === 'arrived' && !st.arrived)  return false;
+    if (filter === 'paid'    && !(st.paid>0)) return false;
+    return true;
+  });
+
+  // Sort: extras last, then not-arrived first, then alpha by last name
+  list.sort((a,b) => {
+    if (!!a.isExtra !== !!b.isExtra) return a.isExtra ? 1 : -1;
+    const aa = !!(checkin[a.id]||{}).arrived;
+    const bb = !!(checkin[b.id]||{}).arrived;
+    if (aa !== bb) return aa ? 1 : -1;
+    return a.last.localeCompare(b.last);
+  });
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="ico">🔍</div><p>No guests match.</p></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(guestCard).join('');
+}
+
+function guestCard(g) {
+  const st     = checkin[g.id]||{};
+  const arrived = !!st.arrived;
+  const comped  = isGuestComped(g, st);
+  const paid    = (st.paid||0) > 0 || comped;
+
+  let cardClass = '';
+  if (paid)         cardClass = 'st-paid';
+  else if (arrived) cardClass = 'st-arrived';
+
+  let dotClass = '';
+  if (paid)         dotClass = 'paid';
+  else if (arrived) dotClass = 'arrived';
+
+  let badges = '';
+  if (isFoodEvt && g.hasMeals) {
+    for (const [name, cnt] of Object.entries(g.meals)) {
+      if (cnt > 0) badges += `<span class="badge b-meal">${mealEmoji(name)} ${name}${cnt>1?' ×'+cnt:''}</span>`;
+    }
+  } else if (g.numMeals > 0) {
+    badges += `<span class="badge b-meal">🍽️ ${g.numMeals} meal${g.numMeals>1?'s':''}</span>`;
+  }
+  if (g.earlyBird)  badges += `<span class="badge b-early">⭐ Early Bird</span>`;
+  if (g.numAtt > 1) badges += `<span class="badge b-guests">👥 ${g.numAtt}</span>`;
+  if ((st.paid||0) > 0 && !comped) badges += `<span class="badge b-paid">💰 $${(st.paid||0).toFixed(2)}</span>`;
+  if (comped)            badges += `<span class="badge" style="background:#f0fdf4;color:#166534;">🎁 Comp</span>`;
+  if (paid && st.byCheck) badges += `<span class="badge b-check">🔲 Check${st.checkNum?' #'+st.checkNum:''}</span>`;
+  if (g.isExtra)    badges += `<span class="badge" style="background:#f3f4f6;color:#6b7280;">🎟️ Walk-in Slot</span>`;
+
+  const extraName = (g.isExtra && st.guestName)
+    ? `<div style="font-size:13px;color:var(--muted);margin-top:3px;">${escHtml(st.guestName)}</div>` : '';
+
+  const extraStyle = g.isExtra ? 'border-left-color:var(--border);opacity:0.85;' : '';
+  return `
+    <div class="guest-card ${cardClass}" style="${extraStyle}" onclick="openGuest('${escHtml(g.id)}')">
+      <div class="status-dot ${dotClass}"></div>
+      <div class="guest-info">
+        <div class="guest-name">${escHtml(g.fullName)}</div>
+        ${extraName}
+        <div class="guest-badges">${badges}</div>
+      </div>
+      <div class="chevron">›</div>
+    </div>`;
+}
+
+function mealEmoji(name) {
+  const n = name.toLowerCase();
+  if (n.includes('prime')||n.includes('beef')||n.includes('rib')) return '🥩';
+  if (n.includes('chicken'))                                       return '🍗';
+  if (n.includes('salmon')||n.includes('fish'))                    return '🐟';
+  if (n.includes('veg')||n.includes('pasta'))                      return '🌿';
+  return '🍽️';
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ──────────────────────────────────────────────────────────────
+// GUEST MODAL
+// ──────────────────────────────────────────────────────────────
+function openGuest(id) {
+  const g = guests.find(x => x.id === id);
+  if (!g) return;
+  activeId = id;
+
+  document.getElementById('m-name').textContent = g.fullName;
+  document.getElementById('m-sub' ).textContent = g.email || 'No email on file';
+
+  buildGuestBody(g);
+  openModal('m-guest');
+}
+
+function buildGuestBody(g) {
+  const st   = checkin[g.id]||{};
+  const paid = st.paid||0;
+  const arrived = !!st.arrived;
+  const comped = isGuestComped(g, st);
+
+  // ── Meal / attendance section ──
+  let mealSection = '';
+  if (isFoodEvt && g.hasMeals) {
+    const rows = Object.entries(g.meals).filter(([,c])=>c>0).map(([name,cnt]) => {
+      const sub = dinnerPrice > 0 ? ` — $${(dinnerPrice * cnt).toFixed(2)}` : '';
+      return `<div class="meal-row">
+                <span>${mealEmoji(name)} ${escHtml(name)}</span>
+                <span class="meal-count">${cnt>1?'×'+cnt:''}${sub}</span>
+              </div>`;
+    }).join('');
+    mealSection = `<div class="section"><div class="sec-label">Meal Order</div>${rows}</div>`;
+  } else {
+    mealSection = `<div class="section"><div class="sec-label">Attendance</div>
+      <div class="meal-row"><span>🍽️ Meals</span><span class="meal-count">${g.numMeals||g.numAtt}</span></div>
+    </div>`;
+  }
+
+  // ── Info pills ──
+  let infoRows = '';
+  if (g.earlyBird)  infoRows += `<div class="meal-row"><span>⭐ Early Bird</span><span style="color:var(--green);font-weight:600">Yes</span></div>`;
+  if (g.numAtt > 1) infoRows += `<div class="meal-row"><span>👥 Total Attendees</span><span class="meal-count">${g.numAtt}</span></div>`;
+  if (infoRows)     infoRows  = `<div class="section"><div class="sec-label">Details</div>${infoRows}</div>`;
+
+  // ── Suggested amount ──
+  const totalMeals = Object.values(g.meals).reduce((s,c) => s+c, 0);
+  const suggested  = isFoodEvt && dinnerPrice > 0 ? totalMeals * dinnerPrice : 0;
+
+  const clearBtn = !g.comped && (paid > 0 || st.byComp)
+    ? `<button class="clr-btn" onclick="clearPay('${escHtml(g.id)}')" style="margin-top:8px;">Clear Payment</button>` : '';
+
+  const nameField = g.isExtra ? `
+    <div class="section">
+      <div class="sec-label">Guest Name</div>
+      <input class="pay-input" type="text" placeholder="Enter guest name…"
+             value="${escHtml(st.guestName||'')}"
+             oninput="saveExtraName('${escHtml(g.id)}', this.value)"
+             style="width:100%;text-align:left;font-size:16px;padding:11px 14px;">
+    </div>` : '';
+
+  const compChecked  = comped;
+  const checkChecked = !st.byComp && !!st.byCheck;
+  const cashChecked  = !st.byComp && !st.byCheck;
+
+  const paymentSection = g.comped
+    ? `
+      <div style="background:#f0fdf4;border:1.5px solid var(--green-light);border-radius:10px;
+                  padding:10px 14px;font-weight:600;color:var(--green);line-height:1.5;">
+        🎁 This guest is marked as comped in the RSVP list. Check them in when they arrive; no payment is needed.
+      </div>`
+    : `
+      ${(paid > 0 || st.byComp) ? `
+      <div style="background:#f0fdf4;border:1.5px solid var(--green-light);border-radius:10px;
+                  padding:10px 14px;margin-bottom:12px;font-weight:600;color:var(--green);">
+        ✅ ${st.byComp ? 'Comped — meal covered' : `$${paid.toFixed(2)} recorded · ${st.byCheck ? 'Check' + (st.checkNum ? ' #'+st.checkNum : '') : 'Cash'}`}
+      </div>` : ''}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+        <label id="lbl-cash" style="display:flex;align-items:center;justify-content:center;gap:6px;
+               padding:11px 6px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;
+               border:2px solid ${cashChecked ? 'var(--navy)' : 'var(--border)'};
+               background:${cashChecked ? '#eff6ff' : '#fff'};">
+          <input type="radio" name="pay-method" value="cash" style="display:none"
+                 onchange="switchPayMethod()" ${cashChecked ? 'checked' : ''}>
+          💵 Cash
+        </label>
+        <label id="lbl-check" style="display:flex;align-items:center;justify-content:center;gap:6px;
+               padding:11px 6px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;
+               border:2px solid ${checkChecked ? 'var(--navy)' : 'var(--border)'};
+               background:${checkChecked ? '#eef2ff' : '#fff'};">
+          <input type="radio" name="pay-method" value="check" style="display:none"
+                 onchange="switchPayMethod()" ${checkChecked ? 'checked' : ''}>
+          🔲 Check
+        </label>
+        <label id="lbl-comp" style="display:flex;align-items:center;justify-content:center;gap:6px;
+               padding:11px 6px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;
+               border:2px solid ${compChecked ? 'var(--green)' : 'var(--border)'};
+               background:${compChecked ? '#f0fdf4' : '#fff'};">
+          <input type="radio" name="pay-method" value="comp" style="display:none"
+                 onchange="switchPayMethod()" ${compChecked ? 'checked' : ''}>
+          🎁 Comp
+        </label>
+      </div>
+      <div id="cash-wrap" style="display:${cashChecked ? 'flex' : 'none'};gap:8px;margin-bottom:8px;">
+        <input class="pay-input" id="amt-in" type="number" inputmode="decimal"
+               placeholder="${suggested > 0 ? suggested.toFixed(2) : '0.00'}"
+               min="0" step="0.01" value="${!st.byCheck && paid ? paid.toFixed(2) : ''}">
+        <button class="pay-btn" onclick="recordPay('${escHtml(g.id)}')">Record</button>
+      </div>
+      <div id="check-wrap" style="display:${checkChecked ? 'flex' : 'none'};gap:8px;margin-bottom:8px;align-items:center;">
+        ${suggested > 0 ? `<span style="font-size:13px;color:var(--muted);white-space:nowrap;padding:0 2px;">$${suggested.toFixed(2)} ·</span>` : ''}
+        <input class="pay-input" id="check-num-in" type="text" inputmode="numeric"
+               placeholder="Check #" value="${escHtml(st.checkNum||'')}"
+               style="font-size:15px;padding:9px 12px;text-align:left;flex:1;">
+        <button class="pay-btn" onclick="recordPay('${escHtml(g.id)}')">Record</button>
+      </div>
+      <div id="comp-wrap" style="display:${compChecked ? 'block' : 'none'};margin-bottom:8px;">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;line-height:1.5">
+          Mark this guest as comped. No payment will be recorded, but they will be fully checked in.
+        </div>
+        <button class="pay-btn" style="width:100%;background:var(--green-light);color:#fff;"
+                onclick="recordPay('${escHtml(g.id)}')">✅ Mark as Comp</button>
+      </div>
+      ${clearBtn}`;
+
+  document.getElementById('m-body').innerHTML = `
+    ${nameField}
+    ${mealSection}
+    ${infoRows}
+    <div class="section">
+      <button class="cibtn ${arrived?'on':'off'}" id="ci-btn" onclick="toggleArrived('${escHtml(g.id)}')">
+        ${arrived ? '✅ Checked In — Tap to Undo' : '👆 Mark as Arrived'}
+      </button>
+    </div>
+    <div class="section">
+      <div class="sec-label">Payment${suggested > 0 ? ` · Suggested $${suggested.toFixed(2)}` : ''}</div>
+      ${paymentSection}
+    </div>`;
+}
+
+function toggleArrived(id) {
+  if (!checkin[id]) checkin[id] = {};
+  checkin[id].arrived = !checkin[id].arrived;
+  const g = guests.find(x => x.id === id);
+  if (g && g.comped) {
+    checkin[id].byComp = checkin[id].arrived;
+    checkin[id].paid = 0;
+    checkin[id].byCheck = false;
+    checkin[id].checkNum = '';
+  }
+  saveStore(); updateStats(); render();
+  const btn = document.getElementById('ci-btn');
+  if (btn) {
+    const on = checkin[id].arrived;
+    btn.className = 'cibtn ' + (on?'on':'off');
+    btn.textContent = on ? '✅ Checked In — Tap to Undo' : '👆 Mark as Arrived';
+  }
+}
+
+function setAmt(v) {
+  const inp = document.getElementById('amt-in');
+  if (inp) { inp.value = v.toFixed(2); document.getElementById('amt-disp').textContent = '$'+v.toFixed(2); }
+}
+
+function recordPay(id) {
+  const method   = document.querySelector('input[name="pay-method"]:checked')?.value || 'cash';
+  const byCheck  = method === 'check';
+  const g = guests.find(x => x.id === id);
+  const byComp   = method === 'comp' || !!g?.comped;
+  const checkNum = (document.getElementById('check-num-in')?.value || '').trim();
+  const amtIn    = parseFloat(document.getElementById('amt-in')?.value) || 0;
+  const totalMeals = g ? Object.values(g.meals).reduce((s,c) => s+c, 0) : 0;
+  const suggested  = isFoodEvt && dinnerPrice > 0 ? totalMeals * dinnerPrice : 0;
+  const amt = byComp ? 0 : (byCheck ? (suggested > 0 ? suggested : 0) : amtIn);
+  if (!checkin[id]) checkin[id] = {};
+  checkin[id].paid     = amt;
+  checkin[id].byCheck  = byCheck;
+  checkin[id].byComp   = byComp;
+  checkin[id].checkNum = checkNum;
+  if (amt > 0 || byCheck || byComp) checkin[id].arrived = true;
+  saveStore(); updateStats(); render();
+  if (g) buildGuestBody(g);
+}
+
+function clearPay(id) {
+  if (checkin[id]) { checkin[id].paid = 0; checkin[id].byCheck = false; checkin[id].checkNum = ''; checkin[id].byComp = false; }
+  saveStore(); updateStats(); render();
+  const g = guests.find(x => x.id === id);
+  if (g) buildGuestBody(g);
+}
+
+function saveExtraName(id, value) {
+  if (!checkin[id]) checkin[id] = {};
+  checkin[id].guestName = value;
+  saveStore();
+  const sub = document.getElementById('m-sub');
+  if (sub) sub.textContent = value.trim() || 'Walk-in Slot';
+  render();
+}
+
+// ──────────────────────────────────────────────────────────────
+// SETTINGS MODAL
+// ──────────────────────────────────────────────────────────────
+function openSettings() {
+  const priceVal = dinnerPrice > 0 ? dinnerPrice.toFixed(2) : '';
+  const extrasRows = isFoodEvt && mealCols.length ? mealCols.map(mc => `
+    <div class="set-row">
+      <div class="set-label">${mealEmoji(mc.name)} ${escHtml(mc.name)}</div>
+      <input class="set-input" id="ex_${escHtml(mc.name.replace(/\s+/g,'_'))}"
+             type="number" inputmode="numeric" min="0" step="1" placeholder="0"
+             value="${parseInt(extras[mc.name])||0}">
+    </div>`).join('') : '';
+
+  const body = `
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.5">
+      All entrees are the same price. Set it here to auto-calculate each guest's suggested payment.
+    </p>
+    <div class="set-row">
+      <div class="set-label">💰 Price per Entree</div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="color:var(--muted)">$</span>
+        <input class="set-input" id="pr_dinner" type="number" inputmode="decimal"
+               min="0" step="0.01" placeholder="0.00" value="${priceVal}">
+      </div>
+    </div>
+    ${isFoodEvt && mealCols.length ? `
+    <div class="sec-label" style="margin-top:16px;margin-bottom:0;">Extra Walk-In Slots</div>
+    <p style="font-size:12px;color:var(--muted);margin:4px 0 8px;line-height:1.5">
+      Walk-in meal slots appended to the bottom of the guest list.
+    </p>
+    ${extrasRows}` : ''}
+    <div class="set-row" style="border:none;margin-top:16px;display:flex;gap:8px;">
+      <button style="flex:1;padding:12px;background:#6b7280;color:#fff;border:none;
+              border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;"
+        onclick="resetExtras()">🎟️ Reset Walk-In Slots</button>
+      <button style="flex:1;padding:12px;background:var(--red);color:#fff;border:none;
+              border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;"
+        onclick="resetAll()">🗑️ Reset All Check-Ins</button>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="cibtn off" onclick="saveSettings()">Save Settings</button>
+    </div>`;
+
+  document.getElementById('m-settings-body').innerHTML = body;
+  openModal('m-settings');
+}
+
+function saveSettings() {
+  const el = document.getElementById('pr_dinner');
+  if (el) dinnerPrice = parseFloat(el.value) || 0;
+  for (const mc of mealCols) {
+    const exEl = document.getElementById('ex_' + mc.name.replace(/\s+/g,'_'));
+    if (exEl) extras[mc.name] = parseInt(exEl.value) || 0;
+  }
+  saveStore();
+  appendExtras();
+  closeModal('m-settings');
+  render();
+}
+
+function resetAll() {
+  if (!confirm('Reset all check-ins and payment records? This cannot be undone.')) return;
+  checkin = {}; saveStore(); updateStats(); render(); closeModal('m-settings');
+}
+
+function resetExtras() {
+  if (!confirm('Remove all walk-in slots and their check-in data? This cannot be undone.')) return;
+  for (const mc of mealCols) extras[mc.name] = 0;
+  // Clear checkin entries for extra slots
+  for (const g of guests.filter(x => x.isExtra)) delete checkin[g.id];
+  saveStore();
+  appendExtras(); // removes extra guests from list
+  updateStats();
+  render();
+  closeModal('m-settings');
+}
+
+// ──────────────────────────────────────────────────────────────
+// SUMMARY MODAL
+// ──────────────────────────────────────────────────────────────
+function openSummary() {
+  const arrived = guests.filter(g => (checkin[g.id]||{}).arrived);
+  const total   = guests.reduce((s,g) => s+((checkin[g.id]||{}).paid||0), 0);
+
+  document.getElementById('m-sum-sub').textContent =
+    `${arrived.length} of ${guests.length} checked in · $${total.toFixed(2)} collected`;
+
+  let html = '';
+
+  // Meal totals
+  if (isFoodEvt) {
+    const totals = {};
+    for (const mc of mealCols) totals[mc.name] = 0;
+    for (const g of arrived) for (const [n,c] of Object.entries(g.meals)) { if(n in totals) totals[n]+=c; }
+    const mRows = Object.entries(totals).map(([n,c]) =>
+      `<tr><td>${mealEmoji(n)} ${escHtml(n)}</td><td style="text-align:right;font-weight:600">${c}</td></tr>`
+    ).join('');
+    html += `<div style="margin-bottom:18px;">
+      <div class="sec-label" style="margin-bottom:8px;">Meals to Serve</div>
+      <table class="sum-table">
+        <thead><tr><th>Meal</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody>${mRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  // Per-guest list
+  const gRows = [...guests]
+    .sort((a,b) => a.last.localeCompare(b.last))
+    .map(g => {
+      const st = checkin[g.id]||{};
+      const mark = st.arrived ? '✅' : '⬜';
+      const p    = isGuestComped(g, st) ? '🎁 Comp' : ((st.paid||0) > 0 ? `$${st.paid.toFixed(2)}${st.byCheck?' 🔲':''}` : '—');
+      const displayName = (g.isExtra && st.guestName) ? `${escHtml(st.guestName)} <span style="font-size:11px;color:var(--muted)">(${escHtml(g.fullName)})</span>` : escHtml(g.fullName);
+      return `<tr><td>${mark} ${displayName}</td><td style="text-align:right">${p}</td></tr>`;
+    }).join('');
+
+  html += `<div>
+    <div class="sec-label" style="margin-bottom:8px;">All Guests</div>
+    <table class="sum-table">
+      <thead><tr><th>Guest</th><th style="text-align:right">Paid</th></tr></thead>
+      <tbody>${gRows}</tbody>
+      <tfoot><tr>
+        <td>Total Collected</td>
+        <td style="text-align:right;color:var(--green)">$${total.toFixed(2)}</td>
+      </tr></tfoot>
+    </table>
+  </div>`;
+
+  document.getElementById('m-sum-body').innerHTML = html;
+  openModal('m-summary');
+}
+
+// ──────────────────────────────────────────────────────────────
+// EXPORT CSV
+// ──────────────────────────────────────────────────────────────
+function exportCSV() {
+  const hdrs = ['Last Name','First Name','Title','Email','Arrived','Amount Paid','By Check','Check Number'];
+  const rows = guests.map(g => {
+    const st = checkin[g.id]||{};
+    const exportFirst = (g.isExtra && st.guestName) ? st.guestName : g.first;
+    const exportLast  = (g.isExtra && st.guestName) ? ''            : g.last;
+    const amtStr = isGuestComped(g, st) ? 'Comp' : (st.paid||0).toFixed(2);
+    return [exportLast, exportFirst, g.title, g.email, st.arrived?'Yes':'No',
+            amtStr, st.byCheck?'Yes':'No', st.checkNum||''];
+  });
+  const csv  = [hdrs,...rows].map(r => r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const url  = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  const a    = Object.assign(document.createElement('a'),
+                 { href:url, download:`checkin_${new Date().toISOString().split('T')[0]}.csv` });
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ──────────────────────────────────────────────────────────────
+// PRICE SETUP
+// ──────────────────────────────────────────────────────────────
+function openPriceSetup() {
+  const extrasRows = isFoodEvt ? mealCols.map(mc => `
+    <div class="set-row">
+      <div class="set-label">${mealEmoji(mc.name)} ${escHtml(mc.name)}</div>
+      <input class="set-input" id="ex_${escHtml(mc.name.replace(/\s+/g,'_'))}"
+             type="number" inputmode="numeric" min="0" step="1" placeholder="0"
+             value="${parseInt(extras[mc.name])||0}">
+    </div>`).join('') : '';
+
+  document.getElementById('m-price-body').innerHTML = `
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+      Set the price per entree and how many extra walk-in slots are available for each meal.
+    </p>
+    <div class="set-row">
+      <div class="set-label">💰 Price per Entree</div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="color:var(--muted)">$</span>
+        <input class="set-input" id="setup-price" type="number" inputmode="decimal"
+               min="0" step="0.01" placeholder="0.00"
+               value="${dinnerPrice > 0 ? dinnerPrice.toFixed(2) : ''}">
+      </div>
+    </div>
+    ${isFoodEvt && mealCols.length ? `
+    <div class="sec-label" style="margin-top:16px;margin-bottom:0;">Extra Walk-In Slots</div>
+    <p style="font-size:12px;color:var(--muted);margin:4px 0 8px;line-height:1.5">
+      How many extra of each meal are available for guests without RSVPs?
+    </p>
+    ${extrasRows}` : ''}
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <button class="cibtn off" style="flex:1;background:var(--muted)" onclick="closeModal('m-price')">Skip</button>
+      <button class="cibtn off" style="flex:1" onclick="savePriceSetup()">Start Check-In ›</button>
+    </div>`;
+
+  openModal('m-price');
+  setTimeout(() => document.getElementById('setup-price')?.focus(), 350);
+}
+
+function savePriceSetup() {
+  const priceEl = document.getElementById('setup-price');
+  dinnerPrice = parseFloat(priceEl?.value) || 0;
+  for (const mc of mealCols) {
+    const el = document.getElementById('ex_' + mc.name.replace(/\s+/g,'_'));
+    if (el) extras[mc.name] = parseInt(el.value) || 0;
+  }
+  saveStore();
+  appendExtras();
+  closeModal('m-price');
+  render();
+}
+
+// ──────────────────────────────────────────────────────────────
+// CHECK PAYMENT
+// ──────────────────────────────────────────────────────────────
+function switchPayMethod() {
+  const method    = document.querySelector('input[name="pay-method"]:checked')?.value;
+  const cashWrap  = document.getElementById('cash-wrap');
+  const checkWrap = document.getElementById('check-wrap');
+  const compWrap  = document.getElementById('comp-wrap');
+  const lblCash   = document.getElementById('lbl-cash');
+  const lblCheck  = document.getElementById('lbl-check');
+  const lblComp   = document.getElementById('lbl-comp');
+  if (!cashWrap) return;
+  cashWrap.style.display  = 'none';
+  checkWrap.style.display = 'none';
+  compWrap.style.display  = 'none';
+  lblCash.style.borderColor  = 'var(--border)'; lblCash.style.background  = '#fff';
+  lblCheck.style.borderColor = 'var(--border)'; lblCheck.style.background = '#fff';
+  lblComp.style.borderColor  = 'var(--border)'; lblComp.style.background  = '#fff';
+  if (method === 'cash') {
+    cashWrap.style.display = 'flex';
+    lblCash.style.borderColor = 'var(--navy)'; lblCash.style.background = '#eff6ff';
+  } else if (method === 'check') {
+    checkWrap.style.display = 'flex';
+    lblCheck.style.borderColor = 'var(--navy)'; lblCheck.style.background = '#eef2ff';
+    document.getElementById('check-num-in')?.focus();
+  } else {
+    compWrap.style.display = 'block';
+    lblComp.style.borderColor = 'var(--green)'; lblComp.style.background = '#f0fdf4';
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// MODAL HELPERS
+// ──────────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function overlayClick(e, id) { if (e.target === e.currentTarget) closeModal(id); }
+
+// ──────────────────────────────────────────────────────────────
+// FILTER
+// ──────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+// ──────────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────────
+loadStore();
+// Show the load-file screen immediately (private/offline-first)
+showError(document.getElementById('list'));
+document.getElementById('ev-sub').textContent = 'Load a CSV to begin';
+</script>
+</body>
+</html>
